@@ -1,93 +1,66 @@
-Tenon Tests
-===========
+Tenon Web Accessibility Testing Grunt Plugin
+============================================
 
-This is an exploration of [TENON](http://tenon.io/) - a web accessiblity testing API - in
-the form of a Grunt plugin.
+This is a Grunt plugin for [TENON](http://tenon.io/) - a web accessiblity testing API.
 
-Tenon docs: https://bitbucket.org/tenon-io/tenon.io-documentation/
+Tenon docs: http://tenon.io/documentation/
 
-What's Here
------------
+This Grunt Tenon plugin is [open and free](https://github.com/egauci/grunt-tenon-client/blob/master/LICENSE).
+However, access to the Tenon API must be granted by [Tenon](http://tenon.io/).
+You will need to obtain an API key to use it.
 
-The lib folder contains node modules.
+A similar gulp plugin that was part of this project has been moved to its own
+repository: https://github.com/egauci/gulp-tenon-client.
 
-1. *tenon.js* is the interface for the Tenon API.
-2. *inliner.js* inlines LOCAL Javascript and CSS into the document
+Getting Started
+---------------
+This plugin requires Grunt ^0.4.5.
 
-The src folder contains *index.js*, a CLI front-end to tenon.js.
-It is not used for the Grunt plugin.
-Type "node src/index --help" for instructions.
+If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the
+[Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to
+create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use
+Grunt plugins. Once you're familiar with that process, you may install this plugin
+with this command:
 
-The Grunt plugin is in the tasks folder, named *grunt-tenon.js*.
+    npm install grunt-tenon-client --save-dev
 
-Things to Note
---------------
+Once the plugin has been installed, it may be enabled inside your Gruntfile with this
+line of JavaScript:
 
-The tenon module (in tenon.js)
-receives a configuration object. This object can contain properties corresponding to
-all the options documented in the Tenon API documentation (with one exception, see below).
-In addition, it can also contain the
-following properties:
+    grunt.loadNpmTasks('grunt-tenon-client');
 
-- config -- Path to a JSON file with parameters to merge in. Default for this in both
-index.js and the Grunt task is '.tenonrc' in the current working directory. This file would be
-a convenient place to put the API URL and the API key.
-- userid and password -- if both are present and the url starts with http, then these
-are incorporated into the url passed to Tenon for basic auth: (use<span>rid:</span>password@domain.com/...)
-- filter - an array of tIDs to filter out of the results. Actually it leaves resultSet unmolested, but creates a
-new array, resultSetFiltered, with these particular errors filtered out.
+Options
+-------
 
-The only Tenon API property that cannot be passed is *src*. The module requires the url property
-and will populate src if it points to a local file.
+The plugin allows passing through of any Tenon API parameters. See the
+[Tenon Docs](http://tenon.io/documentation/) for details.
 
-If tenon.js determines that the given url is a local file (it doesn't start with "http") it will inline all
-local Javascript and CSS. For example:
+This plugin uses [tenon-api-client](https://github.com/egauci/tenon-api-client). The
+API module has additional parameters you can include in the Grunt configuration, such as
+"filter".
 
-    <link rel="stylesheet" href="css/combo.css" media="screen">
-
-will be converted to:
-
-    <style media="screen">
-      [[content of css/combo.css]]
-    </style>
-
-The inlined files must be relative to the HTML file. For example, if a javascript src attribute
-in an html file at C:\project\index.html is "js/script.js" then the file should be at
-C:\project\js\script.js.
-
-Javascript and CSS references that start with "http" are not touched. Userid/password are ignored
-for local files.
-
-The basic assumption is that files loaded with HTTP are accessible to the Tenon server, but
-local files are not.
-
-The modules in the lib folder are fully async and would be usable in a server that has to support
-multiple connections.
-
-The Grunt Plugin
-----------------
-
-The Grunt plugin is a standard Grunt MultiTask. It can be configured in the normal multitask
-way. In addition to the options described above, there are these specific to the plugin:
+In addition to the API and client module options, there are these specific to the plugin:
 
 - snippet -- true or false (default false) to include errorSnippet in the console output.
 - saveOutputIn -- an (optional) path to a file that will receive all the results from the Tenon API. Default is no file output.
-- asyncLim -- the maximum number of files to test in parallel. Default is 1. Setting this to a higher
-value seems to cause "status: 500" results intermittently. This may be an issue with the still beta Tenon API.
-
-At this time the Grunt plugin only passes local files to Tenon (the url is always a local file). It's easy
-to envision a scenario where this is not desired, but it is a current limitation.
+- asyncLim -- the maximum number of files to test in parallel. Default is 1.
+- config -- path to a JSON file containing options. Default is '.tenonrc' in the current working directory.
+The file is processed by the API module and can contain API and API Module parameters.
+This may be a good place to put your API key.
 
 Here is a sample Gruntfile.js configuration:
 
     tenon: {
       options: {
-        filter: [31]
+        key: 'your Tenon API key',
+        filter: [31, 54],
+        level: 'AAA'
       },
       all: {
         options: {
           saveOutputIn: 'allHtml.json',
-          snippet: true
+          snippet: true,
+          asyncLim: 2
         },
         src: [
           'dev/build/*html'
@@ -100,5 +73,25 @@ Here is a sample Gruntfile.js configuration:
       }
     }
 
-The above defines two subtasks, *all* and *index*. The filter option is global and applies to both. The *all* subtask
-has additional options, not shared with other subtasks.
+The above defines two subtasks, *all* and *index*. The key, filter and level options are global and apply to both.
+The *all* subtask has additional options not shared with the other subtask.
+
+
+Note on using http(s) URLs:
+---------------------------
+
+My use case for making this Grunt plugin is to use Tenon during builds on servers that are not accessible to Tenon.
+It passes the HTML file content, with inlined local Javascript and CSS to Tenon. However, it is possible to pass
+server URLs to Tenon instead of source by using the "urlPrefix" option provided by
+[tenon-api-client](https://github.com/egauci/tenon-api-client). For example, if your target file is
+*build/index.html* and it can be addressed as *http://my.domain.com/foo/build/index.html* then you can
+use the option *urlPrefix: 'http://my.domain.com/foo/'*.
+
+Remember, for this to work *http://my.domain.com/foo/build/index.html* must be accessible to the Tenon server.
+
+This option is applied to each target file.
+
+Changelog
+---------
+
+  0.6.2 - Documented use of urlPrefix. No code changes.
